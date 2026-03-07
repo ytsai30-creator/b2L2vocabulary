@@ -34,7 +34,7 @@
         .feedback { min-height: 50px; margin-top: 10px; font-weight: bold; font-size: 1.2rem; }
 
         #match-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; }
-        .match-item { background: white; border-radius: 10px; border: 1px solid #E5E7EB; min-height: 90px; display: flex; align-items: center; justify-content: center; font-size: 0.82rem; padding: 5px; cursor: pointer; }
+        .match-item { background: white; border-radius: 10px; border: 1px solid #E5E7EB; min-height: 90px; display: flex; align-items: center; justify-content: center; font-size: 0.82rem; padding: 5px; cursor: pointer; text-align: center; }
         .match-item.selected { border-color: var(--quiz-purple); background: #F0EFFF; }
         .match-item.correct { visibility: hidden; }
 
@@ -72,7 +72,7 @@
                 <span>Score: <span id="game-score-display">0</span></span>
                 <span style="color:var(--danger);">Time: <span id="game-time-display">60</span>s</span>
             </div>
-            <div id="game-word-display" class="word" style="font-size: 3.5rem; margin: 30px 0;">READY?</div>
+            <div id="game-word-display" class="word">READY?</div>
             <div id="game-feedback" class="feedback"></div>
         </div>
         <button id="game-start-btn" class="btn-main" style="background:var(--success); color:white;" onclick="startGame()">START CHALLENGE</button>
@@ -148,14 +148,14 @@
             document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(id).classList.add('active');
-            const btn = Array.from(document.querySelectorAll('.nav-btn')).find(b => b.innerText.toLowerCase() === id);
-            if(btn) btn.classList.add('active');
+            const btns = document.querySelectorAll('.nav-btn');
+            btns.forEach(b => { if(b.innerText.toLowerCase() === id) b.classList.add('active'); });
             
             window.speechSynthesis.cancel();
             gameActive = false;
             try { mainRec.stop(); } catch(e) {}
             if(id === 'report') updateReport();
-            if(id === 'quiz' && quizSession.num === 1) startQuizSession();
+            if(id === 'learn') updateLearn();
         }
 
         function globalSpeak(text) {
@@ -165,7 +165,6 @@
             window.speechSynthesis.speak(u);
         }
 
-        // --- Learn ---
         let learnIdx = 0;
         function updateLearn() {
             const d = vocabulary[learnIdx];
@@ -184,7 +183,6 @@
             try { mainRec.start(); } catch(e) {}
         }
 
-        // --- Game ---
         let gameActive = false, gameScore = 0, currentGWord = "";
         function startGame() {
             gameActive = true; gameScore = 0; let time = 60;
@@ -216,23 +214,23 @@
                 if(text.includes(currentGWord.toLowerCase())) {
                     gameScore += 10;
                     document.getElementById('game-score-display').innerText = gameScore;
-                    document.getElementById('game-feedback').innerHTML = "<span style='color:var(--success)'>Excellent! +10</span>";
+                    document.getElementById('game-feedback').innerHTML = "<span style='color:var(--success)'>Correct! +10</span>";
                     setTimeout(loadNextGameWord, 400);
                 } else {
-                    document.getElementById('game-feedback').innerHTML = `<span style='color:var(--danger)'>Try again! (heard: ${text})</span>`;
+                    document.getElementById('game-feedback').innerHTML = `<span style='color:var(--danger)'>Try again!</span>`;
                     setTimeout(() => { if(gameActive) mainRec.start(); }, 500);
                 }
             };
-            mainRec.onend = () => { if(gameActive) mainRec.start(); };
+            mainRec.onend = () => { if(gameActive) try { mainRec.start(); } catch(e) {} };
             try { mainRec.start(); } catch(e) {}
         }
 
-        // --- Match ---
         function startMatchGame() {
             let mSecs = 0, mFound = 0;
             const timerSpan = document.getElementById('match-timer');
             clearInterval(window.matchInterval);
             window.matchInterval = setInterval(() => { mSecs++; timerSpan.innerText = mSecs; }, 1000);
+            
             const sub = [...vocabulary].sort(() => 0.5 - Math.random()).slice(0, 8);
             let items = [];
             sub.forEach(v => { items.push({ id: v.word, text: v.word, type: 'en' }); items.push({ id: v.word, text: `${v.def_ch}\n(${v.pos})`, type: 'ch' }); });
@@ -261,22 +259,28 @@
             });
         }
 
-        // --- Quiz ---
-        let quizSession = { num: 1, score: 0, used: [], cur: "" };
-        function startQuizSession() { quizSession = { num: 1, score: 0, used: [], cur: "" }; document.getElementById('quiz-retry-btn').style.display='none'; loadQuiz(); }
+        let quizSession = { num: 1, score: 0, used: [], curTarget: null, firstTry: true };
+        function startQuizSession() { 
+            quizSession = { num: 1, score: 0, used: [], curTarget: null, firstTry: true }; 
+            document.getElementById('quiz-retry-btn').style.display='none'; 
+            loadQuiz(); 
+        }
         function loadQuiz() {
             if(quizSession.num > 10) { 
                 if(quizSession.score > bestScores.quiz) bestScores.quiz = quizSession.score;
-                document.getElementById('quiz-feedback').innerText = "測驗完成！";
+                document.getElementById('quiz-feedback').innerText = "測驗完成！最高分已紀錄。";
                 document.getElementById('quiz-retry-btn').style.display='block'; return; 
             }
             document.getElementById('quiz-num').innerText = quizSession.num;
             document.getElementById('quiz-score-display').innerText = quizSession.score;
             document.getElementById('quiz-feedback').innerText = "";
+            
             let pool = vocabulary.filter(v => !quizSession.used.includes(v.word));
             let target = pool[Math.floor(Math.random()*pool.length)];
-            quizSession.used.push(target.word); quizSession.cur = target.word;
-            let firstTry = true;
+            quizSession.curTarget = target;
+            quizSession.used.push(target.word);
+            quizSession.firstTry = true;
+            
             let opts = [target.def_ch];
             while(opts.length < 4) { 
                 let r = vocabulary[Math.floor(Math.random()*vocabulary.length)];
@@ -287,11 +291,14 @@
             opts.forEach(opt => {
                 const b = document.createElement('button'); b.className = 'option-btn'; b.innerText = opt;
                 b.onclick = () => {
-                    if(opt === target.def_ch) {
+                    if(opt === quizSession.curTarget.def_ch) {
                         document.getElementById('quiz-feedback').innerText = "Correct! ✨"; document.getElementById('quiz-feedback').style.color="var(--success)";
-                        if(firstTry) quizSession.score += 10; quizSession.num++; setTimeout(loadQuiz, 800);
+                        if(quizSession.firstTry) quizSession.score += 10; 
+                        quizSession.num++; 
+                        setTimeout(loadQuiz, 1000);
                     } else {
-                        firstTry = false; b.classList.add('wrong');
+                        quizSession.firstTry = false; 
+                        b.classList.add('wrong');
                         document.getElementById('quiz-feedback').innerText = "Try again! ❌"; document.getElementById('quiz-feedback').style.color="var(--danger)";
                     }
                 };
@@ -299,7 +306,7 @@
             });
             globalSpeak(target.word);
         }
-        function playQuizAudio() { globalSpeak(quizSession.cur); }
+        function playQuizAudio() { if(quizSession.curTarget) globalSpeak(quizSession.curTarget.word); }
 
         function updateReport() {
             document.getElementById('best-game').innerText = bestScores.game;
