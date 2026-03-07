@@ -32,21 +32,34 @@
         .def-ch { font-size: 1.25rem; color: #222; font-weight: 500; border-top: 1px solid #eee; padding-top: 15px; line-height: 1.5; }
         .btn-main { width: 100%; min-height: 55px; border-radius: 15px; font-size: 1.1rem; font-weight: bold; margin-bottom: 10px; cursor: pointer; border: none; }
 
-        .quiz-audio-btn { width: 80px; height: 80px; background: var(--quiz-purple); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto 20px; border: none; cursor: pointer; }
-        .quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; }
-        .option-btn { background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; padding: 15px 5px; font-size: 1rem; cursor: pointer; }
-        .option-btn.wrong { background: #FFEBEE; border-color: var(--danger); color: var(--danger); }
+        .feedback { min-height: 40px; margin-top: 10px; font-weight: bold; font-size: 1.2rem; }
+        
+        /* Game 專屬樣式 */
+        #game-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; width: 100%; margin-top: 10px; }
+        .game-item {
+            background: white; padding: 20px 10px; border-radius: 15px; text-align: center;
+            font-weight: bold; font-size: 1.2rem; color: var(--primary);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 2px solid transparent;
+            display: flex; align-items: center; justify-content: center; min-height: 80px;
+        }
+        .status-indicator { font-size: 0.9rem; margin-top: 5px; color: #666; }
 
+        /* Match 專屬樣式 */
         #match-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; }
         .match-item { background: white; border-radius: 10px; border: 1px solid #E5E7EB; min-height: 90px; display: flex; align-items: center; justify-content: center; font-size: 0.82rem; padding: 5px; cursor: pointer; }
         .match-item.selected { border-color: var(--quiz-purple); background: #F0EFFF; }
         .match-item.correct { visibility: hidden; }
 
+        /* Quiz 專屬樣式 */
+        .quiz-audio-btn { width: 80px; height: 80px; background: var(--quiz-purple); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto 20px; border: none; cursor: pointer; }
+        .quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; }
+        .option-btn { background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; padding: 15px 5px; font-size: 1rem; cursor: pointer; }
+        .option-btn.wrong { background: #FFEBEE; border-color: var(--danger); color: var(--danger); }
+        
+        /* Report 樣式 */
         .report-item { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #EEE; }
         .report-label { font-weight: bold; color: #555; }
         .report-val { color: var(--primary); font-weight: 800; }
-
-        .feedback { min-height: 40px; margin-top: 10px; font-weight: bold; font-size: 1.2rem; }
     </style>
 </head>
 <body>
@@ -73,7 +86,8 @@
                 <span>Score: <span id="game-score-display">0</span></span>
                 <span style="color:var(--danger);">Time: <span id="game-time-display">60</span>s</span>
             </div>
-            <div id="game-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;"></div>
+            <div id="game-grid"></div>
+            <div id="game-status" class="status-indicator">點擊下方按鈕開始</div>
         </div>
         <button id="game-start-btn" class="btn-main" style="background:var(--success); color:white;" onclick="startGame()">START CHALLENGE</button>
         <button id="game-retry-btn" class="btn-main" style="background:var(--primary); color:white; display:none;" onclick="startGame()">Try Again (再次挑戰)</button>
@@ -98,12 +112,12 @@
             <div id="quiz-options" class="quiz-options"></div>
         </div>
         <div id="quiz-feedback" class="feedback"></div>
-        <button id="quiz-retry-btn" class="btn-main" style="background:var(--primary); color:white; display:none;" onclick="startQuizSession()">Restart Quiz (重新測驗)</button>
+        <button id="quiz-retry-btn" class="btn-main" style="background:var(--primary); color:white; display:none;" onclick="startQuizSession()">Restart Quiz</button>
     </div>
 
     <div id="report" class="container">
         <div class="card">
-            <h2 style="margin-top:0">Progress Report</h2>
+            <h2>Progress Report</h2>
             <div class="report-item"><span class="report-label">Game 最高分</span><span class="report-val"><span id="best-game">0</span> 分</span></div>
             <div class="report-item"><span class="report-label">Match 最快時間</span><span class="report-val"><span id="best-match">--</span> 秒</span></div>
             <div class="report-item"><span class="report-label">Quiz 最高得分</span><span class="report-val"><span id="best-quiz">0</span> / 100</span></div>
@@ -120,16 +134,16 @@
             { word: "handle", pos: "vt. / n. [C]", def_ch: "應付，處理 / 把手，柄", root: "handle" },
             { word: "disagreement", pos: "n. [C]", def_ch: "意見不合", root: "disagree" },
             { word: "disagree", pos: "vi.", def_ch: "意見不合", root: "disagree" },
-            { word: "sensitive", pos: "adj.", def_ch: "敏感的，需審慎處理的 / 體貼的，善解人意的", root: "sense" },
+            { word: "sensitive", pos: "adj.", def_ch: "敏感的 / 體貼的", root: "sense" },
             { word: "remain", pos: "vi.", def_ch: "保持不變，依然是", root: "remain" },
-            { word: "couple", pos: "n. [C]", def_ch: "夫妻，情侶 / 兩個，幾個", root: "couple" },
+            { word: "couple", pos: "n. [C]", def_ch: "夫妻 / 幾個", root: "couple" },
             { word: "attempt", pos: "vt. / n. [C]", def_ch: "試圖，嘗試", root: "attempt" },
             { word: "convince", pos: "vt.", def_ch: "說服，使相信", root: "convince" },
             { word: "defend", pos: "vt.", def_ch: "捍衛，保護", root: "defend" },
-            { word: "position", pos: "n. [C]", def_ch: "立場，態度 / 姿勢，位置", root: "position" },
-            { word: "spin", pos: "n. sing. / vi.", def_ch: "導向性的詮釋或描述 / 旋轉", root: "spin" },
-            { word: "heal", pos: "vt.", def_ch: "使癒合，使好轉 / (使) 痊癒", root: "heal" },
-            { word: "division", pos: "n. [C]", def_ch: "分歧，不合 / 分歧，隔閡", root: "divide" },
+            { word: "position", pos: "n. [C]", def_ch: "立場 / 姿勢", root: "position" },
+            { word: "spin", pos: "n. sing. / vi.", def_ch: "描述 / 旋轉", root: "spin" },
+            { word: "heal", pos: "vt.", def_ch: "使癒合，使好轉", root: "heal" },
+            { word: "division", pos: "n. [C]", def_ch: "分歧，不合", root: "divide" },
             { word: "divide", pos: "vt.", def_ch: "使分開", root: "divide" },
             { word: "describe", pos: "vt.", def_ch: "描述，描寫", root: "describe" },
             { word: "description", pos: "n. [C]", def_ch: "描述，描寫", root: "describe" },
@@ -139,7 +153,11 @@
         ];
 
         let bestScores = { game: 0, match: null, quiz: 0 };
-        const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)(); rec.lang = 'en-US';
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let globalRec = new SpeechRec();
+        globalRec.lang = 'en-US';
+        globalRec.continuous = true; // 連續模式
+        globalRec.interimResults = false;
 
         function showPage(id) {
             document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
@@ -149,14 +167,16 @@
             if(btn) btn.classList.add('active');
             if(id === 'report') updateReport();
             if(id === 'quiz' && quizSession.num === 1) startQuizSession();
+            // 切換分頁時停止辨識
+            gameActive = false;
+            try { globalRec.stop(); } catch(e) {}
         }
 
-        // --- 統一語音播放函數 ---
         function globalSpeak(text) {
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'en-US';
-            utterance.rate = 0.9; // 略微放慢語速讓學生聽清楚
+            utterance.rate = 0.9;
             window.speechSynthesis.speak(utterance);
         }
 
@@ -171,39 +191,73 @@
         function handleSpeak() { globalSpeak(vocabulary[learnIdx].word); }
         function handlePractice() {
             const fb = document.getElementById('learn-feedback'); fb.innerText = "Listening... 🎤";
-            rec.start();
-            rec.onresult = (e) => {
+            try { globalRec.stop(); } catch(e) {}
+            const practiceRec = new SpeechRec();
+            practiceRec.lang = 'en-US';
+            practiceRec.start();
+            practiceRec.onresult = (e) => {
                 const text = e.results[0][0].transcript.toLowerCase();
                 if(text.includes(vocabulary[learnIdx].word.toLowerCase())) { fb.innerText = "Correct! ✨"; fb.style.color = "var(--success)"; }
                 else { fb.innerText = `Try again! ❌`; fb.style.color = "var(--danger)"; }
             };
         }
 
-        // --- Game ---
-        let gameActive = false, gameScore = 0;
+        // --- Game (大修正版) ---
+        let gameActive = false, gameScore = 0, activeWords = [];
         function startGame() {
             gameActive = true; gameScore = 0; let time = 60;
             document.getElementById('game-score-display').innerText = "0";
             document.getElementById('game-start-btn').style.display = 'none';
             document.getElementById('game-retry-btn').style.display = 'none';
+            document.getElementById('game-status').innerText = "辨識中...直接唸出畫面單字！🎤";
+            
+            activeWords = [...vocabulary].sort(()=>0.5-Math.random()).slice(0, 6);
+            renderGameGrid();
+
             const timer = setInterval(() => {
                 time--; document.getElementById('game-time-display').innerText = time;
                 if(time <= 0 || !gameActive) { 
                     clearInterval(timer); gameActive = false; 
+                    try { globalRec.stop(); } catch(e) {}
                     if(gameScore > bestScores.game) bestScores.game = gameScore;
                     document.getElementById('game-retry-btn').style.display = 'block';
+                    document.getElementById('game-status').innerText = "挑戰結束！";
                     confetti(); 
                 }
             }, 1000);
-            renderGameGrid();
+
+            // 啟動穩定辨識
+            startStableGameRec();
         }
-        function renderGameGrid() {
+
+        function startStableGameRec() {
             if(!gameActive) return;
+            try { globalRec.start(); } catch(e) {}
+            
+            globalRec.onresult = (e) => {
+                const text = e.results[e.results.length - 1][0].transcript.toLowerCase();
+                const matchedIdx = activeWords.findIndex(w => text.includes(w.word.toLowerCase()));
+                
+                if(matchedIdx !== -1) {
+                    gameScore += 10;
+                    document.getElementById('game-score-display').innerText = gameScore;
+                    // 補救遞補避免重複
+                    let next;
+                    do { next = vocabulary[Math.floor(Math.random()*vocabulary.length)]; }
+                    while (activeWords.some(aw => aw.word === next.word));
+                    
+                    activeWords[matchedIdx] = next;
+                    renderGameGrid();
+                }
+            };
+            // 斷線重啟
+            globalRec.onend = () => { if(gameActive) globalRec.start(); };
+        }
+
+        function renderGameGrid() {
             const grid = document.getElementById('game-grid'); grid.innerHTML = '';
-            const words = [...vocabulary].sort(()=>0.5-Math.random()).slice(0, 6);
-            words.forEach(w => {
-                const div = document.createElement('div'); div.className = 'match-item'; div.innerText = w.word;
-                div.onclick = () => { gameScore += 10; document.getElementById('game-score-display').innerText = gameScore; renderGameGrid(); };
+            activeWords.forEach(w => {
+                const div = document.createElement('div'); div.className = 'game-item'; div.innerText = w.word;
                 grid.appendChild(div);
             });
         }
@@ -215,7 +269,7 @@
             mTimer = setInterval(() => { mSecs++; document.getElementById('match-timer').innerText = mSecs; }, 1000);
             const sub = [...vocabulary].sort(() => 0.5 - Math.random()).slice(0, 8);
             let items = [];
-            sub.forEach(v => { items.push({ id: v.word, text: v.word, type: 'en' }); items.push({ id: v.word, text: v.def_ch, type: 'ch' }); });
+            sub.forEach(v => { items.push({ id: v.word, text: v.word, type: 'en' }); items.push({ id: v.word, text: `${v.def_ch}\n(${v.pos})`, type: 'ch' }); });
             items.sort(() => 0.5 - Math.random());
             const grid = document.getElementById('match-grid'); grid.innerHTML = '';
             let sel = null;
@@ -239,8 +293,8 @@
         }
 
         // --- Quiz ---
-        let quizSession = { num: 1, score: 0, used: [], currentTarget: "" };
-        function startQuizSession() { quizSession = { num: 1, score: 0, used: [], currentTarget: "" }; document.getElementById('quiz-retry-btn').style.display='none'; loadQuiz(); }
+        let quizSession = { num: 1, score: 0, used: [], cur: "" };
+        function startQuizSession() { quizSession = { num: 1, score: 0, used: [], cur: "" }; document.getElementById('quiz-retry-btn').style.display='none'; loadQuiz(); }
         function loadQuiz() {
             if(quizSession.num > 10) { 
                 if(quizSession.score > bestScores.quiz) bestScores.quiz = quizSession.score;
@@ -252,8 +306,7 @@
             document.getElementById('quiz-feedback').innerText = "";
             let pool = vocabulary.filter(v => !quizSession.used.includes(v.word));
             let target = pool[Math.floor(Math.random()*pool.length)];
-            quizSession.used.push(target.word);
-            quizSession.currentTarget = target.word;
+            quizSession.used.push(target.word); quizSession.cur = target.word;
             let firstTry = true;
             let opts = [target.def_ch];
             while(opts.length < 4) { 
@@ -277,7 +330,7 @@
             });
             globalSpeak(target.word);
         }
-        function playQuizAudio() { globalSpeak(quizSession.currentTarget); }
+        function playQuizAudio() { globalSpeak(quizSession.cur); }
 
         function updateReport() {
             document.getElementById('best-game').innerText = bestScores.game;
