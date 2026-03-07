@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Unit 2 英語互動站 - Anny老師</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --primary: #4A90E2; --secondary: #F5A623; --success: #7ED321; --danger: #FF5E5E; --bg: #F0F4F8;
+        }
+        * { touch-action: manipulation; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, sans-serif; background-color: var(--bg); margin: 0;
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+        }
+        nav {
+            width: 100%; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex; justify-content: center; gap: 8px; padding: 12px 5px; position: sticky; top: 0; z-index: 100;
+        }
+        .nav-btn {
+            flex: 1; max-width: 100px; padding: 10px 0; border-radius: 12px; border: 2px solid var(--primary);
+            background: transparent; color: var(--primary); font-weight: bold; font-size: 0.9rem;
+        }
+        .nav-btn.active { background: var(--primary); color: white; }
+        .container { width: 95%; max-width: 600px; margin-top: 20px; display: none; flex-direction: column; align-items: center; padding-bottom: 30px; }
+        .container.active { display: flex; }
+        
+        .card {
+            background: white; width: 100%; border-radius: 20px; padding: 25px 20px;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.05); text-align: center; margin-bottom: 20px;
+            min-height: 250px; display: flex; flex-direction: column; justify-content: center;
+        }
+        .word { font-size: 2.2rem; color: var(--primary); font-weight: bold; margin-bottom: 8px; }
+        .pos { color: #888; font-style: italic; margin-bottom: 15px; }
+        .def-ch { font-size: 1.25rem; color: #222; font-weight: 500; border-top: 1px solid #eee; padding-top: 15px; }
+        
+        .btn-group { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+        button { min-height: 55px; border: none; border-radius: 15px; font-size: 1.1rem; font-weight: bold; cursor: pointer; }
+        .btn-speak { background: var(--secondary); color: white; }
+        .btn-practice { background: var(--primary); color: white; }
+        .btn-next { background: #333; color: white; }
+
+        /* Game 6格消除遞補 */
+        #game-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-top: 10px; }
+        .game-item {
+            background: white; padding: 15px; border-radius: 15px; text-align: center;
+            font-weight: bold; font-size: 1.1rem; color: var(--primary);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); border: 2px solid transparent;
+            display: flex; align-items: center; justify-content: center; min-height: 70px;
+        }
+
+        /* Match 16格調整為 3 欄排列 (增加一排) */
+        #match-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; width: 100%; }
+        .match-item {
+            background: white; padding: 10px 5px; border-radius: 12px; text-align: center;
+            border: 2px solid transparent; box-shadow: 0 3px 6px rgba(0,0,0,0.05);
+            min-height: 90px; display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            font-size: 0.85rem; line-height: 1.3;
+        }
+        .match-item.selected { border-color: var(--primary); background: #E1F0FF; }
+        .match-item.correct { background: #E8F5E9; color: #BBB; opacity: 0.6; }
+        .match-item.wrong { background: #FFEBEE; border-color: var(--danger); }
+
+        .feedback { margin-top: 10px; min-height: 60px; font-weight: bold; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <button class="nav-btn active" id="btn-learn" onclick="showPage('learn')">Learn</button>
+        <button class="nav-btn" id="btn-game" onclick="showPage('game')">Game</button>
+        <button class="nav-btn" id="btn-match" onclick="showPage('match')">Match</button>
+    </nav>
+
+    <div id="learn" class="container active">
+        <div class="card" id="learn-card"></div>
+        <div class="btn-group">
+            <button class="btn-speak" onclick="handleSpeak()">🔊 Listen (聽)</button>
+            <button class="btn-practice" onclick="handlePractice()">🎤 Practice (練習)</button>
+            <div id="learn-feedback" class="feedback"></div>
+            <button class="btn-next" onclick="nextLearnWord()">Next 單字 →</button>
+        </div>
+        <p id="progress-text" style="margin-top:10px; color:#999; font-size: 0.8rem;"></p>
+    </div>
+
+    <div id="game" class="container">
+        <div style="width:100%; display:flex; justify-content:space-between; font-weight:bold; margin-bottom:10px;">
+            <span>Score: <span id="current-score">0</span></span>
+            <span id="timer" style="color:var(--danger);">Time: <span id="seconds">60</span>s</span>
+        </div>
+        <div id="game-grid"></div>
+        <div id="game-feedback" class="feedback"></div>
+        <button id="start-btn" onclick="startGame()" style="background: var(--success); color: white; width: 100%;">START CHALLENGE</button>
+    </div>
+
+    <div id="match" class="container">
+        <div style="font-weight:bold; margin-bottom:10px;">Time: <span id="match-seconds">0</span>s</div>
+        <div id="match-grid"></div>
+        <button onclick="startMatchGame()" style="background: var(--primary); color: white; margin-top: 20px; width: 100%;">New Match</button>
+    </div>
+
+    <script>
+        const vocabulary = [
+            { word: "conflict", pos: "n. / vi.", def_ch: "衝突, 爭執" },
+            { word: "argument", pos: "n.[C]", def_ch: "爭吵, 爭執" },
+            { word: "argue", pos: "vi.", def_ch: "爭吵, 爭論" },
+            { word: "decision", pos: "n.[C]", def_ch: "決定, 判斷" },
+            { word: "debate", pos: "n.[C] / vt.", def_ch: "辯論, 討論" },
+            { word: "handle", pos: "vt. / n.[C]", def_ch: "處理 / 把手" },
+            { word: "disagreement", pos: "n.[C]", def_ch: "意見不合" },
+            { word: "disagree", pos: "vi.", def_ch: "意見不合" },
+            { word: "sensitive", pos: "adj.", def_ch: "敏感的 / 體貼的" },
+            { word: "remain", pos: "vi.", def_ch: "保持不變, 依然是" },
+            { word: "couple", pos: "n.[C]", def_ch: "夫妻 / 幾個" },
+            { word: "attempt", pos: "vt. / n.[C]", def_ch: "試圖, 嘗試" },
+            { word: "convince", pos: "vt.", def_ch: "說服, 使相信" },
+            { word: "defend", pos: "vt.", def_ch: "捍衛, 保護" },
+            { word: "position", pos: "n.[C]", def_ch: "立場 / 姿勢" },
+            { word: "spin", pos: "n. / vi.", def_ch: "描述 / 旋轉" },
+            { word: "heal", pos: "vt.", def_ch: "使癒合, 使好轉" },
+            { word: "division", pos: "n.[C]", def_ch: "分歧, 不合" },
+            { word: "divide", pos: "vt.", def_ch: "使分開" },
+            { word: "describe", pos: "vt.", def_ch: "描述, 描寫" },
+            { word: "description", pos: "n.[C]", def_ch: "描述, 描寫" },
+            { word: "delay", pos: "vt. / n.[U]", def_ch: "耽擱, 延誤" },
+            { word: "judgment", pos: "n.[C]", def_ch: "評價, 判斷" },
+            { word: "judge", pos: "vt.", def_ch: "判斷, 判定" }
+        ];
+
+        let currentIdx = 0;
+        const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let rec = new Speech();
+        rec.lang = 'en-US';
+        rec.continuous = true;
+
+        function showPage(id) {
+            document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.getElementById('btn-'+id).classList.add('active');
+            if(id === 'learn') updateLearn();
+            if(id === 'match') startMatchGame();
+            if(id !== 'game') { gameActive = false; try { rec.stop(); } catch(e){} }
+        }
+
+        // --- Learn ---
+        function updateLearn() {
+            const d = vocabulary[currentIdx];
+            document.getElementById('learn-card').innerHTML = `<div class="word">${d.word}</div><div class="pos">${d.pos}</div><div class="def-ch">${d.def_ch}</div>`;
+            document.getElementById('learn-feedback').innerHTML = "";
+            document.getElementById('progress-text').innerText = `${currentIdx + 1} / ${vocabulary.length}`;
+        }
+        function nextLearnWord() { currentIdx = (currentIdx + 1) % vocabulary.length; updateLearn(); }
+        function handleSpeak() {
+            window.speechSynthesis.cancel();
+            const m = new SpeechSynthesisUtterance(vocabulary[currentIdx].word);
+            m.lang = 'en-US'; window.speechSynthesis.speak(m);
+        }
+        function handlePractice() {
+            const fb = document.getElementById('learn-feedback');
+            fb.innerHTML = "Listening... 🎤"; fb.style.color = "var(--primary)";
+            try { rec.start(); } catch(e) {}
+            rec.onresult = (e) => {
+                const input = e.results[e.results.length - 1][0].transcript.toLowerCase();
+                const target = vocabulary[currentIdx].word.toLowerCase();
+                if(input.includes(target)) {
+                    fb.innerHTML = `Great job! ✨`; fb.style.color = "var(--success)";
+                } else {
+                    fb.innerHTML = `Try again! ❌`; fb.style.color = "var(--danger)";
+                }
+            };
+        }
+
+        // --- Game ---
+        let gameScore = 0, gameTime = 60, gameActive = false, activeWords = [];
+        function startGame() {
+            gameScore = 0; gameTime = 60; gameActive = true;
+            document.getElementById('current-score').innerText = gameScore;
+            document.getElementById('start-btn').style.display = 'none';
+            activeWords = [...vocabulary].sort(() => 0.5 - Math.random()).slice(0, 6);
+            renderGameGrid();
+            const timer = setInterval(() => {
+                gameTime--; document.getElementById('seconds').innerText = gameTime;
+                if(gameTime <= 0 || !gameActive) { clearInterval(timer); if(gameTime<=0) endG(); }
+            }, 1000);
+            startVoiceControl();
+        }
+        function renderGameGrid() {
+            const grid = document.getElementById('game-grid');
+            grid.innerHTML = '';
+            activeWords.forEach(w => {
+                const div = document.createElement('div');
+                div.className = 'game-item';
+                div.innerText = w.word;
+                grid.appendChild(div);
+            });
+        }
+        function startVoiceControl() {
+            try { rec.start(); } catch(e) {}
+            rec.onresult = (e) => {
+                if(!gameActive) return;
+                const input = e.results[e.results.length - 1][0].transcript.toLowerCase();
+                const matchedIdx = activeWords.findIndex(w => input.includes(w.word.toLowerCase()));
+                if(matchedIdx !== -1) {
+                    gameScore += 10;
+                    document.getElementById('current-score').innerText = gameScore;
+                    activeWords[matchedIdx] = vocabulary[Math.floor(Math.random() * vocabulary.length)];
+                    renderGameGrid();
+                    document.getElementById('game-feedback').innerHTML = `<span style="color:var(--success)">Bingo! +10</span>`;
+                }
+            };
+        }
+        function endG() {
+            gameActive = false; document.getElementById('start-btn').style.display = 'block';
+            document.getElementById('game-grid').innerHTML = '<div style="grid-column: 1/3; font-size: 1.5rem; color:var(--primary);">挑戰結束!</div>';
+            confetti({ particleCount: 200, spread: 80, origin: { y: 0.6 } });
+        }
+
+        // --- Match ---
+        let mTimer, mSecs = 0, sel = null, mFound = 0;
+        function startMatchGame() {
+            clearInterval(mTimer); mSecs = 0; mFound = 0; sel = null;
+            mTimer = setInterval(() => { mSecs++; document.getElementById('match-seconds').innerText = mSecs; }, 1000);
+            
+            const targetWords = [...vocabulary].sort(() => 0.5 - Math.random()).slice(0, 8);
+            let items = [];
+            targetWords.forEach(v => {
+                items.push({ id: v.word, text: v.word, type: 'en' });
+                items.push({ id: v.word, text: `${v.def_ch}\n(${v.pos})`, type: 'ch' });
+            });
+            
+            items.sort(() => 0.5 - Math.random());
+            const grid = document.getElementById('match-grid');
+            grid.innerHTML = '';
+            items.forEach(i => {
+                const d = document.createElement('div');
+                d.className = 'match-item'; d.innerText = i.text;
+                d.onclick = () => {
+                    if(d.classList.contains('correct')) return;
+                    if(!sel) { sel = { d, i }; d.classList.add('selected'); }
+                    else {
+                        if(sel.d === d) { d.classList.remove('selected'); sel = null; return; }
+                        if(sel.i.id === i.id && sel.i.type !== i.type) {
+                            d.classList.add('correct'); sel.d.classList.add('correct');
+                            sel.d.classList.remove('selected'); mFound++; sel = null;
+                            if(mFound === 8) { clearInterval(mTimer); confetti({particleCount:150, spread:70}); }
+                        } else {
+                            d.classList.add('wrong'); sel.d.classList.add('wrong');
+                            setTimeout(() => { d.classList.remove('wrong', 'selected'); sel.d.classList.remove('wrong', 'selected'); sel = null; }, 500);
+                        }
+                    }
+                };
+                grid.appendChild(d);
+            });
+        }
+        updateLearn();
+    </script>
+</body>
+</html>
