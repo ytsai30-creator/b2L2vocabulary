@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root {
-            --primary: #4A90E2; --secondary: #F5A623; --success: #7ED321; --danger: #FF5E5E; --bg: #F0F4F8;
+            --primary: #4A90E2; --secondary: #F5A623; --success: #7ED321; --danger: #FF5E5E; --bg: #F0F4F8; --quiz-purple: #6C63FF; --dark: #333;
         }
         * { touch-action: manipulation; box-sizing: border-box; }
         body {
@@ -16,243 +16,273 @@
         }
         nav {
             width: 100%; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            display: flex; justify-content: center; gap: 8px; padding: 12px 5px; position: sticky; top: 0; z-index: 100;
+            display: flex; justify-content: center; gap: 5px; padding: 12px 5px; position: sticky; top: 0; z-index: 100;
         }
         .nav-btn {
-            flex: 1; max-width: 100px; padding: 10px 0; border-radius: 12px; border: 2px solid var(--primary);
-            background: transparent; color: var(--primary); font-weight: bold; font-size: 0.9rem;
+            flex: 1; max-width: 90px; padding: 10px 0; border-radius: 12px; border: 2px solid var(--primary);
+            background: transparent; color: var(--primary); font-weight: bold; font-size: 0.8rem; cursor: pointer;
         }
         .nav-btn.active { background: var(--primary); color: white; }
-        .container { width: 95%; max-width: 600px; margin-top: 20px; display: none; flex-direction: column; align-items: center; padding-bottom: 30px; }
+        .container { width: 95%; max-width: 650px; margin-top: 20px; display: none; flex-direction: column; align-items: center; padding-bottom: 50px; }
         .container.active { display: flex; }
         
-        .card {
-            background: white; width: 100%; border-radius: 20px; padding: 25px 20px;
-            box-shadow: 0 8px 15px rgba(0,0,0,0.05); text-align: center; margin-bottom: 20px;
-            min-height: 250px; display: flex; flex-direction: column; justify-content: center;
-        }
+        .card { background: white; width: 100%; border-radius: 20px; padding: 25px 20px; box-shadow: 0 8px 15px rgba(0,0,0,0.05); text-align: center; margin-bottom: 20px; }
         .word { font-size: 2.2rem; color: var(--primary); font-weight: bold; margin-bottom: 8px; }
         .pos { color: #888; font-style: italic; margin-bottom: 15px; }
-        .def-ch { font-size: 1.25rem; color: #222; font-weight: 500; border-top: 1px solid #eee; padding-top: 15px; }
-        
-        .btn-group { display: flex; flex-direction: column; gap: 10px; width: 100%; }
-        button { min-height: 55px; border: none; border-radius: 15px; font-size: 1.1rem; font-weight: bold; cursor: pointer; }
-        .btn-speak { background: var(--secondary); color: white; }
-        .btn-practice { background: var(--primary); color: white; }
-        .btn-next { background: #333; color: white; }
+        .def-ch { font-size: 1.25rem; color: #222; font-weight: 500; border-top: 1px solid #eee; padding-top: 15px; line-height: 1.5; }
+        .btn-main { width: 100%; min-height: 55px; border-radius: 15px; font-size: 1.1rem; font-weight: bold; margin-bottom: 10px; cursor: pointer; border: none; }
 
-        /* Game 6格消除遞補 */
-        #game-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-top: 10px; }
-        .game-item {
-            background: white; padding: 15px; border-radius: 15px; text-align: center;
-            font-weight: bold; font-size: 1.1rem; color: var(--primary);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1); border: 2px solid transparent;
-            display: flex; align-items: center; justify-content: center; min-height: 70px;
-        }
+        .quiz-audio-btn { width: 80px; height: 80px; background: var(--quiz-purple); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto 20px; border: none; cursor: pointer; }
+        .quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; }
+        .option-btn { background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; padding: 15px 5px; font-size: 1rem; cursor: pointer; }
+        .option-btn.wrong { background: #FFEBEE; border-color: var(--danger); color: var(--danger); }
 
-        /* Match 16格調整為 3 欄排列 (增加一排) */
-        #match-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; width: 100%; }
-        .match-item {
-            background: white; padding: 10px 5px; border-radius: 12px; text-align: center;
-            border: 2px solid transparent; box-shadow: 0 3px 6px rgba(0,0,0,0.05);
-            min-height: 90px; display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            font-size: 0.85rem; line-height: 1.3;
-        }
-        .match-item.selected { border-color: var(--primary); background: #E1F0FF; }
-        .match-item.correct { background: #E8F5E9; color: #BBB; opacity: 0.6; }
-        .match-item.wrong { background: #FFEBEE; border-color: var(--danger); }
+        #match-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; }
+        .match-item { background: white; border-radius: 10px; border: 1px solid #E5E7EB; min-height: 90px; display: flex; align-items: center; justify-content: center; font-size: 0.82rem; padding: 5px; cursor: pointer; }
+        .match-item.selected { border-color: var(--quiz-purple); background: #F0EFFF; }
+        .match-item.correct { visibility: hidden; }
 
-        .feedback { margin-top: 10px; min-height: 60px; font-weight: bold; text-align: center; }
+        .report-item { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #EEE; }
+        .report-label { font-weight: bold; color: #555; }
+        .report-val { color: var(--primary); font-weight: 800; }
+
+        .feedback { min-height: 40px; margin-top: 10px; font-weight: bold; font-size: 1.2rem; }
     </style>
 </head>
 <body>
 
     <nav>
-        <button class="nav-btn active" id="btn-learn" onclick="showPage('learn')">Learn</button>
-        <button class="nav-btn" id="btn-game" onclick="showPage('game')">Game</button>
-        <button class="nav-btn" id="btn-match" onclick="showPage('match')">Match</button>
+        <button class="nav-btn active" onclick="showPage('learn')">Learn</button>
+        <button class="nav-btn" onclick="showPage('game')">Game</button>
+        <button class="nav-btn" onclick="showPage('match')">Match</button>
+        <button class="nav-btn" onclick="showPage('quiz')">Quiz</button>
+        <button class="nav-btn" onclick="showPage('report')">Report</button>
     </nav>
 
     <div id="learn" class="container active">
-        <div class="card" id="learn-card"></div>
-        <div class="btn-group">
-            <button class="btn-speak" onclick="handleSpeak()">🔊 Listen (聽)</button>
-            <button class="btn-practice" onclick="handlePractice()">🎤 Practice (練習)</button>
-            <div id="learn-feedback" class="feedback"></div>
-            <button class="btn-next" onclick="nextLearnWord()">Next 單字 →</button>
-        </div>
-        <p id="progress-text" style="margin-top:10px; color:#999; font-size: 0.8rem;"></p>
+        <div class="card"><div id="learn-card"></div></div>
+        <button class="btn-main" style="background:var(--secondary); color:white;" onclick="handleSpeak()">🔊 Listen (聽音)</button>
+        <button class="btn-main" style="background:var(--primary); color:white;" onclick="handlePractice()">🎤 Practice (開口練)</button>
+        <div id="learn-feedback" class="feedback"></div>
+        <button class="btn-main" style="background:var(--dark); color:white;" onclick="nextLearnWord()">Next 單字 →</button>
     </div>
 
     <div id="game" class="container">
-        <div style="width:100%; display:flex; justify-content:space-between; font-weight:bold; margin-bottom:10px;">
-            <span>Score: <span id="current-score">0</span></span>
-            <span id="timer" style="color:var(--danger);">Time: <span id="seconds">60</span>s</span>
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:10px;">
+                <span>Score: <span id="game-score-display">0</span></span>
+                <span style="color:var(--danger);">Time: <span id="game-time-display">60</span>s</span>
+            </div>
+            <div id="game-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;"></div>
         </div>
-        <div id="game-grid"></div>
-        <div id="game-feedback" class="feedback"></div>
-        <button id="start-btn" onclick="startGame()" style="background: var(--success); color: white; width: 100%;">START CHALLENGE</button>
+        <button id="game-start-btn" class="btn-main" style="background:var(--success); color:white;" onclick="startGame()">START CHALLENGE</button>
+        <button id="game-retry-btn" class="btn-main" style="background:var(--primary); color:white; display:none;" onclick="startGame()">Try Again (再次挑戰)</button>
     </div>
 
     <div id="match" class="container">
-        <div style="font-weight:bold; margin-bottom:10px;">Time: <span id="match-seconds">0</span>s</div>
-        <div id="match-grid"></div>
-        <button onclick="startMatchGame()" style="background: var(--primary); color: white; margin-top: 20px; width: 100%;">New Match</button>
+        <div class="card">
+            <h3 style="margin:0">Matching Game</h3>
+            <p>時間: <span id="match-timer">0</span>s</p>
+            <div id="match-grid"></div>
+        </div>
+        <button class="btn-main" style="background:var(--quiz-purple); color:white;" onclick="startMatchGame()">開始 / 換一組</button>
+    </div>
+
+    <div id="quiz" class="container">
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-weight:bold; color:#666;">
+                <span>第 <span id="quiz-num">1</span> / 10 題</span>
+                <span>得分: <span id="quiz-score-display">0</span></span>
+            </div>
+            <button class="quiz-audio-btn" onclick="playQuizAudio()">🔊</button>
+            <div id="quiz-options" class="quiz-options"></div>
+        </div>
+        <div id="quiz-feedback" class="feedback"></div>
+        <button id="quiz-retry-btn" class="btn-main" style="background:var(--primary); color:white; display:none;" onclick="startQuizSession()">Restart Quiz (重新測驗)</button>
+    </div>
+
+    <div id="report" class="container">
+        <div class="card">
+            <h2 style="margin-top:0">Progress Report</h2>
+            <div class="report-item"><span class="report-label">Game 最高分</span><span class="report-val"><span id="best-game">0</span> 分</span></div>
+            <div class="report-item"><span class="report-label">Match 最快時間</span><span class="report-val"><span id="best-match">--</span> 秒</span></div>
+            <div class="report-item"><span class="report-label">Quiz 最高得分</span><span class="report-val"><span id="best-quiz">0</span> / 100</span></div>
+        </div>
     </div>
 
     <script>
         const vocabulary = [
-            { word: "conflict", pos: "n. / vi.", def_ch: "衝突, 爭執" },
-            { word: "argument", pos: "n.[C]", def_ch: "爭吵, 爭執" },
-            { word: "argue", pos: "vi.", def_ch: "爭吵, 爭論" },
-            { word: "decision", pos: "n.[C]", def_ch: "決定, 判斷" },
-            { word: "debate", pos: "n.[C] / vt.", def_ch: "辯論, 討論" },
-            { word: "handle", pos: "vt. / n.[C]", def_ch: "處理 / 把手" },
-            { word: "disagreement", pos: "n.[C]", def_ch: "意見不合" },
-            { word: "disagree", pos: "vi.", def_ch: "意見不合" },
-            { word: "sensitive", pos: "adj.", def_ch: "敏感的 / 體貼的" },
-            { word: "remain", pos: "vi.", def_ch: "保持不變, 依然是" },
-            { word: "couple", pos: "n.[C]", def_ch: "夫妻 / 幾個" },
-            { word: "attempt", pos: "vt. / n.[C]", def_ch: "試圖, 嘗試" },
-            { word: "convince", pos: "vt.", def_ch: "說服, 使相信" },
-            { word: "defend", pos: "vt.", def_ch: "捍衛, 保護" },
-            { word: "position", pos: "n.[C]", def_ch: "立場 / 姿勢" },
-            { word: "spin", pos: "n. / vi.", def_ch: "描述 / 旋轉" },
-            { word: "heal", pos: "vt.", def_ch: "使癒合, 使好轉" },
-            { word: "division", pos: "n.[C]", def_ch: "分歧, 不合" },
-            { word: "divide", pos: "vt.", def_ch: "使分開" },
-            { word: "describe", pos: "vt.", def_ch: "描述, 描寫" },
-            { word: "description", pos: "n.[C]", def_ch: "描述, 描寫" },
-            { word: "delay", pos: "vt. / n.[U]", def_ch: "耽擱, 延誤" },
-            { word: "judgment", pos: "n.[C]", def_ch: "評價, 判斷" },
-            { word: "judge", pos: "vt.", def_ch: "判斷, 判定" }
+            { word: "conflict", pos: "n. [U] / vi.", def_ch: "衝突，爭執 / 衝突，抵觸", root: "conflict" },
+            { word: "argument", pos: "n. [C]", def_ch: "爭吵，爭執", root: "argue" },
+            { word: "argue", pos: "vi.", def_ch: "爭吵，爭論", root: "argue" },
+            { word: "decision", pos: "n. [C]", def_ch: "決定，判斷", root: "decide" },
+            { word: "debate", pos: "n. [C] / vt.", def_ch: "辯論，討論", root: "debate" },
+            { word: "handle", pos: "vt. / n. [C]", def_ch: "應付，處理 / 把手，柄", root: "handle" },
+            { word: "disagreement", pos: "n. [C]", def_ch: "意見不合", root: "disagree" },
+            { word: "disagree", pos: "vi.", def_ch: "意見不合", root: "disagree" },
+            { word: "sensitive", pos: "adj.", def_ch: "敏感的，需審慎處理的 / 體貼的，善解人意的", root: "sense" },
+            { word: "remain", pos: "vi.", def_ch: "保持不變，依然是", root: "remain" },
+            { word: "couple", pos: "n. [C]", def_ch: "夫妻，情侶 / 兩個，幾個", root: "couple" },
+            { word: "attempt", pos: "vt. / n. [C]", def_ch: "試圖，嘗試", root: "attempt" },
+            { word: "convince", pos: "vt.", def_ch: "說服，使相信", root: "convince" },
+            { word: "defend", pos: "vt.", def_ch: "捍衛，保護", root: "defend" },
+            { word: "position", pos: "n. [C]", def_ch: "立場，態度 / 姿勢，位置", root: "position" },
+            { word: "spin", pos: "n. sing. / vi.", def_ch: "導向性的詮釋或描述 / 旋轉", root: "spin" },
+            { word: "heal", pos: "vt.", def_ch: "使癒合，使好轉 / (使) 痊癒", root: "heal" },
+            { word: "division", pos: "n. [C]", def_ch: "分歧，不合 / 分歧，隔閡", root: "divide" },
+            { word: "divide", pos: "vt.", def_ch: "使分開", root: "divide" },
+            { word: "describe", pos: "vt.", def_ch: "描述，描寫", root: "describe" },
+            { word: "description", pos: "n. [C]", def_ch: "描述，描寫", root: "describe" },
+            { word: "delay", pos: "vt. / n. [U]", def_ch: "耽擱，延誤", root: "delay" },
+            { word: "judgment", pos: "n. [C]", def_ch: "評價，判斷", root: "judge" },
+            { word: "judge", pos: "vt.", def_ch: "判斷，判定", root: "judge" }
         ];
 
-        let currentIdx = 0;
-        const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
-        let rec = new Speech();
-        rec.lang = 'en-US';
-        rec.continuous = true;
+        let bestScores = { game: 0, match: null, quiz: 0 };
+        const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)(); rec.lang = 'en-US';
 
         function showPage(id) {
             document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(id).classList.add('active');
-            document.getElementById('btn-'+id).classList.add('active');
-            if(id === 'learn') updateLearn();
-            if(id === 'match') startMatchGame();
-            if(id !== 'game') { gameActive = false; try { rec.stop(); } catch(e){} }
+            const btn = Array.from(document.querySelectorAll('.nav-btn')).find(b => b.innerText.toLowerCase() === id);
+            if(btn) btn.classList.add('active');
+            if(id === 'report') updateReport();
+            if(id === 'quiz' && quizSession.num === 1) startQuizSession();
+        }
+
+        // --- 統一語音播放函數 ---
+        function globalSpeak(text) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.9; // 略微放慢語速讓學生聽清楚
+            window.speechSynthesis.speak(utterance);
         }
 
         // --- Learn ---
+        let learnIdx = 0;
         function updateLearn() {
-            const d = vocabulary[currentIdx];
+            const d = vocabulary[learnIdx];
             document.getElementById('learn-card').innerHTML = `<div class="word">${d.word}</div><div class="pos">${d.pos}</div><div class="def-ch">${d.def_ch}</div>`;
-            document.getElementById('learn-feedback').innerHTML = "";
-            document.getElementById('progress-text').innerText = `${currentIdx + 1} / ${vocabulary.length}`;
+            document.getElementById('learn-feedback').innerText = "";
         }
-        function nextLearnWord() { currentIdx = (currentIdx + 1) % vocabulary.length; updateLearn(); }
-        function handleSpeak() {
-            window.speechSynthesis.cancel();
-            const m = new SpeechSynthesisUtterance(vocabulary[currentIdx].word);
-            m.lang = 'en-US'; window.speechSynthesis.speak(m);
-        }
+        function nextLearnWord() { learnIdx = (learnIdx + 1) % vocabulary.length; updateLearn(); }
+        function handleSpeak() { globalSpeak(vocabulary[learnIdx].word); }
         function handlePractice() {
-            const fb = document.getElementById('learn-feedback');
-            fb.innerHTML = "Listening... 🎤"; fb.style.color = "var(--primary)";
-            try { rec.start(); } catch(e) {}
+            const fb = document.getElementById('learn-feedback'); fb.innerText = "Listening... 🎤";
+            rec.start();
             rec.onresult = (e) => {
-                const input = e.results[e.results.length - 1][0].transcript.toLowerCase();
-                const target = vocabulary[currentIdx].word.toLowerCase();
-                if(input.includes(target)) {
-                    fb.innerHTML = `Great job! ✨`; fb.style.color = "var(--success)";
-                } else {
-                    fb.innerHTML = `Try again! ❌`; fb.style.color = "var(--danger)";
-                }
+                const text = e.results[0][0].transcript.toLowerCase();
+                if(text.includes(vocabulary[learnIdx].word.toLowerCase())) { fb.innerText = "Correct! ✨"; fb.style.color = "var(--success)"; }
+                else { fb.innerText = `Try again! ❌`; fb.style.color = "var(--danger)"; }
             };
         }
 
         // --- Game ---
-        let gameScore = 0, gameTime = 60, gameActive = false, activeWords = [];
+        let gameActive = false, gameScore = 0;
         function startGame() {
-            gameScore = 0; gameTime = 60; gameActive = true;
-            document.getElementById('current-score').innerText = gameScore;
-            document.getElementById('start-btn').style.display = 'none';
-            activeWords = [...vocabulary].sort(() => 0.5 - Math.random()).slice(0, 6);
-            renderGameGrid();
+            gameActive = true; gameScore = 0; let time = 60;
+            document.getElementById('game-score-display').innerText = "0";
+            document.getElementById('game-start-btn').style.display = 'none';
+            document.getElementById('game-retry-btn').style.display = 'none';
             const timer = setInterval(() => {
-                gameTime--; document.getElementById('seconds').innerText = gameTime;
-                if(gameTime <= 0 || !gameActive) { clearInterval(timer); if(gameTime<=0) endG(); }
+                time--; document.getElementById('game-time-display').innerText = time;
+                if(time <= 0 || !gameActive) { 
+                    clearInterval(timer); gameActive = false; 
+                    if(gameScore > bestScores.game) bestScores.game = gameScore;
+                    document.getElementById('game-retry-btn').style.display = 'block';
+                    confetti(); 
+                }
             }, 1000);
-            startVoiceControl();
+            renderGameGrid();
         }
         function renderGameGrid() {
-            const grid = document.getElementById('game-grid');
-            grid.innerHTML = '';
-            activeWords.forEach(w => {
-                const div = document.createElement('div');
-                div.className = 'game-item';
-                div.innerText = w.word;
+            if(!gameActive) return;
+            const grid = document.getElementById('game-grid'); grid.innerHTML = '';
+            const words = [...vocabulary].sort(()=>0.5-Math.random()).slice(0, 6);
+            words.forEach(w => {
+                const div = document.createElement('div'); div.className = 'match-item'; div.innerText = w.word;
+                div.onclick = () => { gameScore += 10; document.getElementById('game-score-display').innerText = gameScore; renderGameGrid(); };
                 grid.appendChild(div);
             });
         }
-        function startVoiceControl() {
-            try { rec.start(); } catch(e) {}
-            rec.onresult = (e) => {
-                if(!gameActive) return;
-                const input = e.results[e.results.length - 1][0].transcript.toLowerCase();
-                const matchedIdx = activeWords.findIndex(w => input.includes(w.word.toLowerCase()));
-                if(matchedIdx !== -1) {
-                    gameScore += 10;
-                    document.getElementById('current-score').innerText = gameScore;
-                    activeWords[matchedIdx] = vocabulary[Math.floor(Math.random() * vocabulary.length)];
-                    renderGameGrid();
-                    document.getElementById('game-feedback').innerHTML = `<span style="color:var(--success)">Bingo! +10</span>`;
-                }
-            };
-        }
-        function endG() {
-            gameActive = false; document.getElementById('start-btn').style.display = 'block';
-            document.getElementById('game-grid').innerHTML = '<div style="grid-column: 1/3; font-size: 1.5rem; color:var(--primary);">挑戰結束!</div>';
-            confetti({ particleCount: 200, spread: 80, origin: { y: 0.6 } });
-        }
 
         // --- Match ---
-        let mTimer, mSecs = 0, sel = null, mFound = 0;
+        let mTimer, mSecs = 0, mFound = 0;
         function startMatchGame() {
-            clearInterval(mTimer); mSecs = 0; mFound = 0; sel = null;
-            mTimer = setInterval(() => { mSecs++; document.getElementById('match-seconds').innerText = mSecs; }, 1000);
-            
-            const targetWords = [...vocabulary].sort(() => 0.5 - Math.random()).slice(0, 8);
+            clearInterval(mTimer); mSecs = 0; mFound = 0;
+            mTimer = setInterval(() => { mSecs++; document.getElementById('match-timer').innerText = mSecs; }, 1000);
+            const sub = [...vocabulary].sort(() => 0.5 - Math.random()).slice(0, 8);
             let items = [];
-            targetWords.forEach(v => {
-                items.push({ id: v.word, text: v.word, type: 'en' });
-                items.push({ id: v.word, text: `${v.def_ch}\n(${v.pos})`, type: 'ch' });
-            });
-            
+            sub.forEach(v => { items.push({ id: v.word, text: v.word, type: 'en' }); items.push({ id: v.word, text: v.def_ch, type: 'ch' }); });
             items.sort(() => 0.5 - Math.random());
-            const grid = document.getElementById('match-grid');
-            grid.innerHTML = '';
+            const grid = document.getElementById('match-grid'); grid.innerHTML = '';
+            let sel = null;
             items.forEach(i => {
-                const d = document.createElement('div');
-                d.className = 'match-item'; d.innerText = i.text;
+                const d = document.createElement('div'); d.className = 'match-item'; d.innerText = i.text;
                 d.onclick = () => {
-                    if(d.classList.contains('correct')) return;
+                    if(d.classList.contains('correct') || sel?.d === d) return;
                     if(!sel) { sel = { d, i }; d.classList.add('selected'); }
                     else {
-                        if(sel.d === d) { d.classList.remove('selected'); sel = null; return; }
                         if(sel.i.id === i.id && sel.i.type !== i.type) {
-                            d.classList.add('correct'); sel.d.classList.add('correct');
-                            sel.d.classList.remove('selected'); mFound++; sel = null;
-                            if(mFound === 8) { clearInterval(mTimer); confetti({particleCount:150, spread:70}); }
+                            d.classList.add('correct'); sel.d.classList.add('correct'); mFound++; sel = null;
+                            if(mFound === 8) { clearInterval(mTimer); confetti(); if(!bestScores.match || mSecs < bestScores.match) bestScores.match = mSecs; }
                         } else {
-                            d.classList.add('wrong'); sel.d.classList.add('wrong');
-                            setTimeout(() => { d.classList.remove('wrong', 'selected'); sel.d.classList.remove('wrong', 'selected'); sel = null; }, 500);
+                            d.classList.add('wrong'); sel.d.classList.add('wrong'); const t = sel; sel = null;
+                            setTimeout(() => { d.classList.remove('wrong', 'selected'); t.d.classList.remove('wrong', 'selected'); }, 500);
                         }
                     }
                 };
                 grid.appendChild(d);
             });
+        }
+
+        // --- Quiz ---
+        let quizSession = { num: 1, score: 0, used: [], currentTarget: "" };
+        function startQuizSession() { quizSession = { num: 1, score: 0, used: [], currentTarget: "" }; document.getElementById('quiz-retry-btn').style.display='none'; loadQuiz(); }
+        function loadQuiz() {
+            if(quizSession.num > 10) { 
+                if(quizSession.score > bestScores.quiz) bestScores.quiz = quizSession.score;
+                document.getElementById('quiz-feedback').innerText = "測驗完成！";
+                document.getElementById('quiz-retry-btn').style.display='block'; confetti(); return; 
+            }
+            document.getElementById('quiz-num').innerText = quizSession.num;
+            document.getElementById('quiz-score-display').innerText = quizSession.score;
+            document.getElementById('quiz-feedback').innerText = "";
+            let pool = vocabulary.filter(v => !quizSession.used.includes(v.word));
+            let target = pool[Math.floor(Math.random()*pool.length)];
+            quizSession.used.push(target.word);
+            quizSession.currentTarget = target.word;
+            let firstTry = true;
+            let opts = [target.def_ch];
+            while(opts.length < 4) { 
+                let r = vocabulary[Math.floor(Math.random()*vocabulary.length)];
+                if(!opts.includes(r.def_ch) && r.root !== target.root) opts.push(r.def_ch);
+            }
+            opts.sort(()=>0.5-Math.random());
+            const container = document.getElementById('quiz-options'); container.innerHTML = '';
+            opts.forEach(opt => {
+                const b = document.createElement('button'); b.className = 'option-btn'; b.innerText = opt;
+                b.onclick = () => {
+                    if(opt === target.def_ch) {
+                        document.getElementById('quiz-feedback').innerText = "Correct! ✨"; document.getElementById('quiz-feedback').style.color="var(--success)";
+                        if(firstTry) quizSession.score += 10; quizSession.num++; setTimeout(loadQuiz, 800);
+                    } else {
+                        firstTry = false; b.classList.add('wrong');
+                        document.getElementById('quiz-feedback').innerText = "Try again! ❌"; document.getElementById('quiz-feedback').style.color="var(--danger)";
+                    }
+                };
+                container.appendChild(b);
+            });
+            globalSpeak(target.word);
+        }
+        function playQuizAudio() { globalSpeak(quizSession.currentTarget); }
+
+        function updateReport() {
+            document.getElementById('best-game').innerText = bestScores.game;
+            document.getElementById('best-match').innerText = bestScores.match || "--";
+            document.getElementById('best-quiz').innerText = bestScores.quiz;
         }
         updateLearn();
     </script>
