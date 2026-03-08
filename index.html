@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Unit 2 英語互動站 - Anny老師</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root {
             --primary: #4A90E2; --secondary: #F5A623; --success: #7ED321; --danger: #FF5E5E; --bg: #F0F4F8; --quiz-purple: #6C63FF; --dark: #333;
@@ -41,8 +42,8 @@
         .quiz-audio-btn { width: 80px; height: 80px; background: var(--quiz-purple); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto 20px; border: none; cursor: pointer; }
         .quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; }
         .option-btn { background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; padding: 15px 5px; font-size: 1rem; cursor: pointer; }
-        .option-btn.wrong { background: #FFEBEE; border-color: var(--danger); color: var(--danger); }
-        
+        .option-btn.wrong { background: #FFEBEE !important; border-color: var(--danger) !important; color: var(--danger) !important; }
+
         .report-item { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #EEE; }
         .report-label { font-weight: bold; color: #555; }
         .report-val { color: var(--primary); font-weight: 800; }
@@ -98,7 +99,7 @@
             <div id="quiz-options" class="quiz-options"></div>
         </div>
         <div id="quiz-feedback" class="feedback"></div>
-        <button id="quiz-retry-btn" class="btn-main" style="background:var(--primary); color:white; display:none;" onclick="startQuizSession()">Restart Quiz</button>
+        <button id="quiz-retry-btn" class="btn-main" style="background:var(--primary); color:white; display:none;" onclick="startQuizSession()">Restart Quiz (重新測驗)</button>
     </div>
 
     <div id="report" class="container">
@@ -154,8 +155,10 @@
             window.speechSynthesis.cancel();
             gameActive = false;
             try { mainRec.stop(); } catch(e) {}
+            
             if(id === 'report') updateReport();
             if(id === 'learn') updateLearn();
+            if(id === 'quiz') startQuizSession(); // 強制初始化 Quiz
         }
 
         function globalSpeak(text) {
@@ -259,6 +262,7 @@
             });
         }
 
+        // --- Quiz Session 修復版 ---
         let quizSession = { num: 1, score: 0, used: [], curTarget: null, firstTry: true };
         function startQuizSession() { 
             quizSession = { num: 1, score: 0, used: [], curTarget: null, firstTry: true }; 
@@ -266,14 +270,21 @@
             loadQuiz(); 
         }
         function loadQuiz() {
+            const container = document.getElementById('quiz-options');
+            const fb = document.getElementById('quiz-feedback');
+            
             if(quizSession.num > 10) { 
                 if(quizSession.score > bestScores.quiz) bestScores.quiz = quizSession.score;
-                document.getElementById('quiz-feedback').innerText = "測驗完成！最高分已紀錄。";
-                document.getElementById('quiz-retry-btn').style.display='block'; return; 
+                fb.innerText = "測驗完成！最高分已紀錄。";
+                fb.style.color = "var(--primary)";
+                container.innerHTML = "";
+                document.getElementById('quiz-retry-btn').style.display='block'; 
+                return; 
             }
+            
             document.getElementById('quiz-num').innerText = quizSession.num;
             document.getElementById('quiz-score-display').innerText = quizSession.score;
-            document.getElementById('quiz-feedback').innerText = "";
+            fb.innerText = "";
             
             let pool = vocabulary.filter(v => !quizSession.used.includes(v.word));
             let target = pool[Math.floor(Math.random()*pool.length)];
@@ -287,19 +298,20 @@
                 if(!opts.includes(r.def_ch) && r.root !== target.root) opts.push(r.def_ch);
             }
             opts.sort(()=>0.5-Math.random());
-            const container = document.getElementById('quiz-options'); container.innerHTML = '';
+            
+            container.innerHTML = '';
             opts.forEach(opt => {
                 const b = document.createElement('button'); b.className = 'option-btn'; b.innerText = opt;
                 b.onclick = () => {
-                    if(opt === quizSession.curTarget.def_ch) {
-                        document.getElementById('quiz-feedback').innerText = "Correct! ✨"; document.getElementById('quiz-feedback').style.color="var(--success)";
+                    if(opt === target.def_ch) {
+                        fb.innerText = "Correct! ✨"; fb.style.color="var(--success)";
                         if(quizSession.firstTry) quizSession.score += 10; 
                         quizSession.num++; 
                         setTimeout(loadQuiz, 1000);
                     } else {
                         quizSession.firstTry = false; 
                         b.classList.add('wrong');
-                        document.getElementById('quiz-feedback').innerText = "Try again! ❌"; document.getElementById('quiz-feedback').style.color="var(--danger)";
+                        fb.innerText = "Try again! ❌"; fb.style.color="var(--danger)";
                     }
                 };
                 container.appendChild(b);
