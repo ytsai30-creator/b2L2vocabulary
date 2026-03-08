@@ -34,16 +34,20 @@
 
         .feedback { min-height: 50px; margin-top: 10px; font-weight: bold; font-size: 1.2rem; }
 
+        /* Match 佈局 */
         #match-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; }
         .match-item { background: white; border-radius: 10px; border: 1px solid #E5E7EB; min-height: 90px; display: flex; align-items: center; justify-content: center; font-size: 0.82rem; padding: 5px; cursor: pointer; text-align: center; }
         .match-item.selected { border-color: var(--quiz-purple); background: #F0EFFF; }
         .match-item.correct { visibility: hidden; }
 
-        .quiz-audio-btn { width: 80px; height: 80px; background: var(--quiz-purple); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto 20px; border: none; cursor: pointer; }
+        /* Quiz 互動元件 */
+        .quiz-audio-btn { width: 80px; height: 80px; background: var(--quiz-purple); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto 20px; border: none; cursor: pointer; box-shadow: 0 4px 10px rgba(108, 99, 255, 0.3); }
+        .quiz-audio-btn:active { transform: scale(0.95); }
         .quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; }
-        .option-btn { background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; padding: 15px 5px; font-size: 1rem; cursor: pointer; }
+        .option-btn { background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; padding: 15px 5px; font-size: 1rem; cursor: pointer; min-height: 70px; }
         .option-btn.wrong { background: #FFEBEE !important; border-color: var(--danger) !important; color: var(--danger) !important; }
 
+        /* Report 樣式 */
         .report-item { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #EEE; }
         .report-label { font-weight: bold; color: #555; }
         .report-val { color: var(--primary); font-weight: 800; }
@@ -91,9 +95,9 @@
 
     <div id="quiz" class="container">
         <div class="card">
-            <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-weight:bold; color:#666;">
-                <span>第 <span id="quiz-num">1</span> / 10 題</span>
-                <span>得分: <span id="quiz-score-display">0</span></span>
+            <div style="display:flex; justify-content:space-between; margin-bottom:15px; font-weight:bold; color:#666;">
+                <span>題目: <span id="quiz-num">1</span> / 10</span>
+                <span>累計得分: <span id="quiz-score-display">0</span></span>
             </div>
             <button class="quiz-audio-btn" onclick="playQuizAudio()">🔊</button>
             <div id="quiz-options" class="quiz-options"></div>
@@ -158,7 +162,7 @@
             
             if(id === 'report') updateReport();
             if(id === 'learn') updateLearn();
-            if(id === 'quiz') startQuizSession(); // 強制初始化 Quiz
+            if(id === 'quiz') startQuizSession();
         }
 
         function globalSpeak(text) {
@@ -168,6 +172,7 @@
             window.speechSynthesis.speak(u);
         }
 
+        // --- Learn 邏輯 ---
         let learnIdx = 0;
         function updateLearn() {
             const d = vocabulary[learnIdx];
@@ -186,6 +191,7 @@
             try { mainRec.start(); } catch(e) {}
         }
 
+        // --- Game 邏輯 ---
         let gameActive = false, gameScore = 0, currentGWord = "";
         function startGame() {
             gameActive = true; gameScore = 0; let time = 60;
@@ -228,6 +234,7 @@
             try { mainRec.start(); } catch(e) {}
         }
 
+        // --- Match 邏輯 ---
         function startMatchGame() {
             let mSecs = 0, mFound = 0;
             const timerSpan = document.getElementById('match-timer');
@@ -262,7 +269,7 @@
             });
         }
 
-        // --- Quiz Session 修復版 ---
+        // --- Quiz 邏輯 (聽力測驗) ---
         let quizSession = { num: 1, score: 0, used: [], curTarget: null, firstTry: true };
         function startQuizSession() { 
             quizSession = { num: 1, score: 0, used: [], curTarget: null, firstTry: true }; 
@@ -275,7 +282,7 @@
             
             if(quizSession.num > 10) { 
                 if(quizSession.score > bestScores.quiz) bestScores.quiz = quizSession.score;
-                fb.innerText = "測驗完成！最高分已紀錄。";
+                fb.innerText = "測驗完成！分數已紀錄在 Report。";
                 fb.style.color = "var(--primary)";
                 container.innerHTML = "";
                 document.getElementById('quiz-retry-btn').style.display='block'; 
@@ -292,6 +299,7 @@
             quizSession.used.push(target.word);
             quizSession.firstTry = true;
             
+            // 產生包含正確答案的 4 個選項，排除同根詞
             let opts = [target.def_ch];
             while(opts.length < 4) { 
                 let r = vocabulary[Math.floor(Math.random()*vocabulary.length)];
