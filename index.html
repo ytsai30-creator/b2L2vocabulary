@@ -62,11 +62,11 @@
                 <span>Score: <span id="game-score-display">0</span></span>
                 <span style="color:var(--danger);">Time: <span id="game-time-display">60</span>s</span>
             </div>
-            <div id="game-word-display" class="word" style="padding: 20px 0;">READY?</div>
+            <div id="game-word-display" class="word">READY?</div>
             <div id="game-feedback" class="feedback"></div>
         </div>
         <button id="game-start-btn" class="btn-main" style="background:var(--success); color:white;" onclick="startGame()">START CHALLENGE</button>
-        <button id="game-retry-btn" class="btn-main" style="background:var(--primary); color:white; display:none;" onclick="startGame()">Try Again (再次挑戰)</button>
+        <button id="game-retry-btn" class="btn-main" style="background:var(--primary); color:white; display:none;" onclick="startGame()">Try Again (再次練習)</button>
     </div>
 
     <div id="match" class="container">
@@ -174,7 +174,7 @@
             try { mainRec.start(); } catch(e) {}
         }
 
-        // --- Game (強化版辨識) ---
+        // --- Game ---
         let gameActive = false, gameScore = 0, currentGWord = "";
         function startGame() {
             gameActive = true; gameScore = 0; let time = 60;
@@ -243,7 +243,7 @@
             });
         }
 
-        // --- Quiz (修復最後一題結算問題) ---
+        // --- Quiz (結算分數修復版) ---
         let quizSession = { num: 1, score: 0, used: [], curTarget: null, firstTry: true };
         function startQuizSession() {
             quizSession = { num: 1, score: 0, used: [], curTarget: null, firstTry: true };
@@ -254,9 +254,9 @@
             const container = document.getElementById('quiz-options');
             const feedback = document.getElementById('quiz-feedback');
             
-            // 修正：先顯示最後一題的成果，不立刻關閉
+            // 修正：檢查是否超過10題
             if (quizSession.num > 10) {
-                document.getElementById('quiz-score-display').innerText = quizSession.score;
+                // 分數已在最後一題答對時更新
                 if(quizSession.score > bestScores.quiz) bestScores.quiz = quizSession.score;
                 feedback.innerText = "測驗完成！最終得分：" + quizSession.score;
                 feedback.style.color = "var(--primary)";
@@ -288,8 +288,12 @@
                     if(opt === target.def_ch) {
                         feedback.innerText = "Correct! ✨"; feedback.style.color="var(--success)";
                         if(quizSession.firstTry) quizSession.score += 10;
-                        document.getElementById('quiz-score-display').innerText = quizSession.score; // 即時更新最後一題分數
+                        
+                        // 關鍵修正：點擊正確答案後立刻更新畫面上顯示的分數
+                        document.getElementById('quiz-score-display').innerText = quizSession.score;
+                        
                         quizSession.num++;
+                        // 給一秒鐘反應時間再跳轉下一題或結算頁
                         setTimeout(loadQuiz, 1000);
                     } else {
                         quizSession.firstTry = false; b.classList.add('wrong');
@@ -304,7 +308,7 @@
 
         function updateReport() {
             document.getElementById('best-game').innerText = bestScores.game;
-            document.getElementById('best-match').innerText = bestScores.match || "--";
+            document.getElementById('best-match').innerText = (bestScores.match !== null) ? bestScores.match : "--";
             document.getElementById('best-quiz').innerText = bestScores.quiz;
         }
         updateLearn();
